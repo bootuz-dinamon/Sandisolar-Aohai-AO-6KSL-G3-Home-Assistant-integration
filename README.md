@@ -1,6 +1,8 @@
 # Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration
 Sandisolar Aohai AO-6KSL-G3 Home Assistant integration via RS-485 using esphome.
 
+![Sandisolar Aohai AO-6KSL-G3](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/SD-PRO-EU-6_8.webp)
+
 Source: https://bootuse.com/forum/viewtopic.php?p=25#p25
 
 If you have established communication with the battery via CAN, then you still have free RS485 and it can be used for integration into Home Assistant.
