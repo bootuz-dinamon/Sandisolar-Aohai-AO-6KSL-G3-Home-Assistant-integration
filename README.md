@@ -17,9 +17,11 @@ RS485-TTL adapter power supply - 5V, connection to the inverter - only lines A a
 - esp32c6 - https://s.click.aliexpress.com/e/_c3HYdofD
 
 Pinout RJ45 Sandisolar Aohai AO-6KSL-G3:
+
 ![Pinout](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/rj45.jpg)
 
 Sensors and Settings:
+
 ![Sensors](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Sensor1.jpg)
 ![Sensors](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Sensor2.jpg)
 ![Sensors](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Sensor3.jpg)
