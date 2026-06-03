@@ -17,14 +17,19 @@ RS485-TTL adapter power supply - 5V, connection to the inverter - only lines A a
 - esp32c6 - https://s.click.aliexpress.com/e/_c3HYdofD
 
 Pinout RJ45 Sandisolar Aohai AO-6KSL-G3:
+BAT_NTC and GND - you can connect a 10kΩ NTC to these pins to measure battery temperature.
+If you don't need this, comment out the "Temp External NTC" sensor.
 
 ![Pinout](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/rj45.jpg)
 
-Sensors and Settings:
+Sensors:
 
 ![Sensors](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Sensor1.jpg)
 ![Sensors](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Sensor2.jpg)
 ![Sensors](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Sensor3.jpg)
+
+Settings:
+
 ![Settings](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Setting1.jpg)
 ![Settings](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Setting2.jpg)
 ![Settings](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/Setting3.jpg)
