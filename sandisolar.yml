@@ -1,0 +1,1295 @@
+#web_server:
+#  port: 80
+  
+
+# Enable logging
+logger:
+  baud_rate: 0
+  level: DEBUG
+
+
+
+
+uart:
+  id: mod_bus
+  tx_pin: GPIO19
+  rx_pin: GPIO20
+  baud_rate: 9600
+  parity: NONE
+  stop_bits: 1
+  #debug:
+
+
+modbus:
+  id: modbus1
+  uart_id: mod_bus
+
+modbus_controller:
+  - id: inverter
+    address: 1
+    modbus_id: modbus1
+    command_throttle: 100ms
+    setup_priority: -10
+    update_interval: 5s
+
+sensor:
+  # Статус інвертора
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    id: inverter_status
+    name: "Inverter Status"
+    register_type: read
+    address: 0
+    value_type: U_WORD
+
+  # Напруга AC інвертора
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Voltage"
+    id: inverter_voltage
+    register_type: read
+    address: 2
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  # Струм інвертора
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Current"
+    id: inverter_current
+    register_type: read
+    address: 5
+    value_type: S_WORD
+    unit_of_measurement: "A"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+  
+  #Inverter Maximum Rated Power
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Maximum Rated Power"
+    address: 63
+    register_type: holding          # Зчитуємо з блоку Holding регістрів
+    value_type: U_DWORD             # Склеюємо 63 та 64 регістри в одне 32-бітке число
+    unit_of_measurement: "W"
+    accuracy_decimals: 0
+    device_class: power
+    state_class: measurement
+    icon: "mdi:badge-account-alert"
+    filters:
+      - multiply: 0.1               # Множник 0.1W з документації
+
+  # Температура інвертора
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Temp Inverter"
+    id: inverter_temp
+    register_type: read
+    address: 10
+    value_type: S_WORD
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  # Температура IPM
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Temp Boost"
+    id: boost_temp
+    register_type: read
+    address: 11
+    value_type: S_WORD
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+
+  # Grid Voltage
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Grid Voltage"
+    id: grid_voltage
+    register_type: read
+    address: 42
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  # Grid Current
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Grid Current"
+    id: grid_current
+    register_type: read
+    address: 43
+    value_type: S_WORD
+    unit_of_measurement: "A"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  # Частота мережі
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Grid Frequency"
+    id: grid_frequency
+    register_type: read
+    address: 51
+    value_type: U_WORD
+    unit_of_measurement: "Hz"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  # PV1 Voltage
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "PV1 Voltage"
+    id: pv1_voltage
+    register_type: read
+    address: 64
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  # PV1 Current
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "PV1 Current"
+    id: pv1_current
+    register_type: read
+    address: 65
+    value_type: U_WORD
+    unit_of_measurement: "A"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+  # Розрахунок потужності PV1
+  - platform: template
+    name: "PV1 Power"
+    unit_of_measurement: "W"
+    accuracy_decimals: 0
+    lambda: |-
+      return id(pv1_voltage).state * id(pv1_current).state;
+
+
+      
+# Battery voltage
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Voltage"
+    id: battery_voltage
+    register_type: read
+    address: 127
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+
+# Battery SOC
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery SOC"
+    id: battery_soc
+    register_type: read
+    address: 128
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    device_class: battery
+    state_class: measurement
+    accuracy_decimals: 1
+
+
+# BMS battery current
+  # + = charge
+  # - = discharge
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Current"
+    id: battery_current
+    register_type: read
+    address: 141
+    value_type: S_WORD
+    unit_of_measurement: "A"
+    device_class: current
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+
+# Внутрішня напруга Bus1 (Регістр 8)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Bus1 Voltage"
+    address: 8
+    register_type: read
+    value_type: U_WORD 
+    unit_of_measurement: "V"
+    device_class: voltage
+    filters:
+      - multiply: 0.1 
+
+
+# Загальна вихідна активна потужність (Регістр 286)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Power Total Active"
+    address: 286                     # Регістри 286 та 287
+    register_type: read
+    value_type: S_DWORD             # Обов'язково 32-біти зі знаком (sint32)
+    unit_of_measurement: "W"
+    accuracy_decimals: 1            # <--- Змініть на 1, щоб бачити десяті частини!
+    device_class: power
+    state_class: measurement
+    icon: "mdi:lightning-bolt"
+    filters:
+      - multiply: -0.1              # <--- Множимо на -0.1, щоб прибрати мінус від інвертора
+
+# Загальна потужність локального навантаження (Регістр 330)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Power Out Load"
+    address: 330
+    register_type: read
+    value_type: U_DWORD # 32-бітне число без знака (uint32)
+    unit_of_measurement: "W"
+    device_class: power
+    filters:
+      - multiply: 0.1 
+
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Power To User Total"
+    address: 320
+    register_type: read
+    value_type: U_DWORD 
+    unit_of_measurement: "W"
+    device_class: power
+    filters:
+      - multiply: 0.1 # Згідно з таблицею крок 0.1W
+
+ 
+# Швидкість обертання вентилятора (Регістр 106)
+#  - platform: modbus_controller
+#    modbus_controller_id: inverter
+#    name: "Fan Speed"
+#    address: 106
+#    register_type: read
+#    value_type: U_WORD 
+#    unit_of_measurement: "RPM"
+#    icon: "mdi:fan"
+
+
+
+# 1. Струм батареї від BMS (Регістр 141)
+  # Зверніть увагу: тип sint16, оскільки струм може бути від'ємним (розряд) або додатним (заряд)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "BMS Battery Current"
+    address: 141
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "A"
+    device_class: current
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+
+# 3. Максимальний струм заряду, який дозволяє BMS (Регістр 143)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "BMS Max Allowed Charge Current"
+    address: 143
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "A"
+    device_class: current
+    filters:
+      - multiply: 0.1
+
+# 4. Максимальний струм розряду, який дозволяє BMS (Регістр 144)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "BMS Max Allowed Discharge Current"
+    address: 144
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "A"
+    device_class: current
+    filters:
+      - multiply: 0.1
+
+# Баланс комірок (Delta Volt) — тепер показуватиме 3 знаки після коми
+#  - platform: modbus_controller
+#    modbus_controller_id: inverter
+#    name: "BMS Cell Delta Voltage"
+#    address: 150  # (Або 149, якщо ви міняли адресу через зсув)
+#    register_type: read
+#    value_type: U_WORD
+#    unit_of_measurement: "V"
+#    device_class: voltage
+#    accuracy_decimals: 3 # Змушує відображати три знаки (наприклад, 0.002 V)
+#    filters:
+#      - multiply: 0.001
+
+# Максимальна напруга комірки
+#  - platform: modbus_controller
+#    modbus_controller_id: inverter
+#    name: "BMS Max Cell Voltage"
+#    address: 157  # (Або 156)
+#    register_type: read
+#    value_type: U_WORD
+#    unit_of_measurement: "V"
+#    device_class: voltage
+#    accuracy_decimals: 3
+#    filters:
+#      - multiply: 0.001
+
+# Мінімальна напруга комірки
+#  - platform: modbus_controller
+#    modbus_controller_id: inverter
+#    name: "BMS Min Cell Voltage"
+#    address: 158  # (Або 157)
+#    register_type: read
+#    value_type: U_WORD
+#    unit_of_measurement: "V"
+#    device_class: voltage
+#    accuracy_decimals: 3
+#    filters:
+#      - multiply: 0.001
+
+# 8. Кількість повних циклів акумулятора (Регістр 151)
+#  - platform: modbus_controller
+#    modbus_controller_id: inverter
+#    name: "BMS Battery Cycle Count"
+#    address: 151
+#    register_type: read
+#    value_type: U_WORD
+#    icon: "mdi:battery-refresh"
+
+# 2. Температура батареї від BMS (Регістр 142)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "BMS Battery Temperature"
+    address: 142
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "°C"
+    device_class: temperature
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Temp LLC"
+    address: 12
+    register_type: read      # Читаємо як Input Register
+    value_type: S_WORD       # 16-бітне число зі знаком (sint16)
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+    icon: "mdi:thermometer"
+    # Множимо на 0.1, щоб отримати коректне значення з десятковою комою
+    filters:
+      - multiply: 0.1
+
+  # --- ЗАРЯД ЗА СЬОГОДНІ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Energy Charge Today"
+    address: 383                     # Початкова адреса (захопить 383 і 384)
+    register_type: read
+    value_type: U_DWORD             # 32-бітне число (uint32)
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 1
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:battery-arrow-up"
+    filters:
+      - multiply: 0.1
+
+  # --- ЗАГАЛЬНИЙ ЗАРЯД (TOTAL) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Energy Charge Total"
+    address: 385                     # Початкова адреса (захопить 385 і 386)
+    register_type: read
+    value_type: U_DWORD
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 1
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:battery-plus"
+    filters:
+      - multiply: 0.1
+
+  # --- РОЗРЯД ЗА СЬОГОДНІ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Energy Discharge Today"
+    address: 387                     # Початкова адреса (захопить 387 і 388)
+    register_type: read
+    value_type: U_DWORD
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 1
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:battery-arrow-down"
+    filters:
+      - multiply: 0.1
+
+  # --- ЗАГАЛЬНИЙ РОЗРЯД (TOTAL) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Energy Discharge Total"
+    address: 389                     # Початкова адреса (захопить 389 і 390)
+    register_type: read
+    value_type: U_DWORD
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 1
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:battery-minus"
+    filters:
+      - multiply: 0.1
+
+  # NTC темп
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Temp External NTC"
+    address: 13              # Змініть на точну адресу регістра з вашої таблиці!
+    register_type: read      # Читаємо як Input Register
+    value_type: S_WORD       # 16-бітне число зі знаком (sint16)
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+    icon: "mdi:thermometer-bluetooth" # Іконка зовнішнього/виносного датчика
+    # Множимо на 0.1, оскільки китайські NTC-налаштування майже завжди йдуть без коми
+    filters:
+      - multiply: 0.1
+
+# --- СОНЯЧНА ГЕНЕРАЦІЯ ЗА СЬОГОДНІ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Solar Generation Today"
+    address: 379                     # Стартова адреса (захопить 379 та 380 регістри)
+    register_type: read
+    value_type: U_DWORD             # 32-бітне число (uint32)
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 1
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:solar-power-variant"
+    filters:
+      - multiply: 0.1
+
+  # --- ЗАГАЛЬНА СОНЯЧНА ГЕНЕРАЦІЯ (TOTAL) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Solar Generation Total"
+    address: 381                     # Стартова адреса (захопить 381 та 382 регістри)
+    register_type: read
+    value_type: U_DWORD
+    unit_of_measurement: "kWh"
+    accuracy_decimals: 1
+    device_class: energy
+    state_class: total_increasing
+    icon: "mdi:solar-panel-large"
+    filters:
+      - multiply: 0.1
+
+
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Power Total Apparent ALL"
+    address: 284                     # Стартова адреса (захопить 284 та 285)
+    register_type: read
+    value_type: U_DWORD             # 32-бітне число (uint32)
+    unit_of_measurement: "VA"
+    accuracy_decimals: 1
+    device_class: apparent_power
+    state_class: measurement
+    icon: "mdi:flash"
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Power Total Reactive  ALL"
+    address: 288                     # Стартова адреса (захопить 288 та 289)
+    register_type: read
+    value_type: S_DWORD             # Використовуємо 32-бітне число зі знаком (sint32)
+    unit_of_measurement: "var"
+    accuracy_decimals: 1
+    device_class: reactive_power
+    state_class: measurement
+    icon: "mdi:flash-outline"
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Power Factor"
+    address: 52
+    register_type: read      # Читаємо як Input Register
+    value_type: S_WORD       # 16-бітне число зі знаком (sint16)
+    unit_of_measurement: ""  # Коефіцієнт потужності є безрозмірною величиною
+    accuracy_decimals: 2     # Показуватиме, наприклад, 0.97 чи 1.00
+    device_class: power_factor
+    state_class: measurement
+    icon: "mdi:angle-acute"
+    filters:
+      - multiply: 0.0001
+
+
+  # --- НАПРУГА EPS (РЕЗЕРВ) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "EPS Voltage"
+    address: 55
+    register_type: read      # Читаємо як Input Register
+    value_type: U_WORD       # 16-бітне число без знаку (uint16)
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    device_class: voltage
+    state_class: measurement
+    icon: "mdi:flash-outline"
+    filters:
+      - multiply: 0.1
+
+  # --- СТРУМ EPS (РЕЗЕРВ) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "EPS Current"
+    address: 56
+    register_type: read      # Читаємо як Input Register
+    value_type: U_WORD       # 16-бітне число без знаку (uint16)
+    unit_of_measurement: "A"
+    accuracy_decimals: 1
+    device_class: current
+    state_class: measurement
+    icon: "mdi:current-ac"
+    filters:
+      - multiply: 0.1
+
+  # --- НАПРУГА ГЕНЕРАТОРА ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Generator Voltage"
+    address: 96
+    register_type: read      # Читаємо як Input Register
+    value_type: U_WORD       # 16-бітне число без знаку (uint16)
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    device_class: voltage
+    state_class: measurement
+    icon: "mdi:engine-outline"
+    filters:
+      - multiply: 0.1
+
+  # --- СТРУМ ГЕНЕРАТОРА ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Generator Current"
+    address: 97
+    register_type: read      # Читаємо як Input Register
+    value_type: U_WORD       # 16-бітне число без знаку (uint16)
+    unit_of_measurement: "A"
+    accuracy_decimals: 1
+    device_class: current
+    state_class: measurement
+    icon: "mdi:current-ac"
+    filters:
+      - multiply: 0.1
+
+
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Total Operation Time"
+    address: 107                     # Стартова адреса (захопить 107 та 108 регістри)
+    register_type: read
+    value_type: U_DWORD             # 32-бітне число (uint32)
+    unit_of_measurement: "h"         # Виводимо в годинах (hours)
+    accuracy_decimals: 1             # Один знак після коми (наприклад, 142.5 год)
+    icon: "mdi:hourglass-toggle"
+    # Перераховуємо байти інвертора (0.5 хв) у повноцінні години
+    filters:
+      - multiply: 0.00833333
+
+
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery SOH"
+    address: 152
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    state_class: measurement
+    icon: "mdi:heart-battery"
+
+
+# 201й регістр
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    id: inverter_reg_201_raw
+    address: 201
+    register_type: holding
+    value_type: U_WORD
+    internal: true # Цей сенсор прихований, він потрібен лише для розбору на біти
+    # Оновлюємо статус наших бінарних сенсорів щоразу, як зчитується регістр
+    on_value:
+      then:
+        - lambda: |-
+            if (!std::isnan(x)) {
+              uint16_t val = (uint16_t)x;
+              id(bin_eco_mode).publish_state((val & 0x0001) > 0);
+              id(bin_overload_restart).publish_state((val & 0x0002) > 0);
+              id(bin_temp_restart).publish_state((val & 0x0004) > 0);
+              id(bin_mode_alert).publish_state((val & 0x0008) > 0);
+              id(bin_gen_enable).publish_state((val & 0x0020) > 0);
+              id(bin_smart_load).publish_state((val & 0x0040) > 0);
+              id(bin_grid_feed).publish_state((val & 0x0080) > 0);
+            }
+
+
+text_sensor:
+  - platform: template
+    name: "Inverter Mode"
+    lambda: |-
+      switch ((int)id(inverter_status).state) {
+        case 0: return {"Waiting"};
+        case 1: return {"On-grid"};
+        case 2: return {"Off-grid"};
+        case 3: return {"Fault"};
+        case 4: return {"Flashing"};
+        case 5: return {"Bypass"};
+        case 6: return {"Self-charge"};
+        case 7: return {"Generator"};
+        default: return {"Unknown"};
+      }
+
+
+# --- РЕГІСТР 234: ЗВ'ЯЗОК З ХМАРОЮ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Cloud Connection Status"
+    address: 234
+    register_type: holding
+    entity_category: diagnostic
+    icon: "mdi:cloud-check"
+    lambda: |-
+      if (data.size() < 2) return std::string("Немає даних");
+      
+      // Логіка для молодшого байта (data[1])
+      uint8_t status_byte = data[1]; 
+      if (status_byte == 0xAA) {
+        return std::string("Норма (Підключено)");
+      } else if (status_byte == 0x55) {
+        return std::string("Помилка хмари");
+      } else {
+        return std::string("Невідомий статус");
+      }
+
+
+# --- РЕГІСТР 235: ВНУТРІШНІЙ ЗВ'ЯЗОК (ЛОГГЕР <-> ІНВЕРТОР) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Logger Internal Comm Status"
+    address: 235
+    register_type: holding
+    entity_category: diagnostic
+    icon: "mdi:connection"
+    lambda: |-
+      if (data.size() < 2) return std::string("Немає даних");
+      
+      // У 235 регістрі значення зазвичай лежить у молодшому байті (data[1])
+      uint8_t comm_byte = data[1]; 
+      if (comm_byte == 0xAA) {
+        return std::string("Зв'язок OK");
+      } else if (comm_byte == 0x55) {
+        return std::string("Помилка зв'язку з платою");
+      } else {
+        // Про всяк випадок перевіримо старший байт, якщо китайці записали туди
+        if (data[0] == 0xAA) return std::string("Зв'язок OK");
+        if (data[0] == 0x55) return std::string("Помилка зв'язку з платою");
+        return std::string("Невідомий статус");
+      }
+
+
+
+
+switch:
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Power Switch"
+    address: 0
+    register_type: holding # Важливо! Для керування використовуємо Holding Registers
+    bitmask: 1             # Працюємо з першим бітом (1 - ввімкнено, 0 - вимкнено)
+    entity_category: config
+    icon: "mdi:power"
+
+   # --- РЕГІСТР 231: КЕРУВАННЯ BLUETOOTH ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Enable Bluetooth"
+    address: 231
+    register_type: holding
+    entity_category: config
+    icon: "mdi:bluetooth"
+    # Оскільки тип у таблиці uint8, значення зазвичай лежить у молодшому байті
+    lambda: "return x > 0;"
+    write_lambda: "return x ? 1.0f : 0.0f;"
+
+# --- РЕГІСТР 207: КЕРУВАННЯ ЗВУКОВИМ СИГНАЛОМ (ПИЩАЛКОЮ) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Enable Buzzer"
+    address: 207
+    register_type: holding
+    entity_category: config
+    icon: "mdi:volume-mute"
+    # Інвертуємо логіку для зручності: перемикач увімкнено = звук вимкнено (Mute)
+    lambda: "return x > 0;"
+    write_lambda: "return x ? 1.0f : 0.0f;"
+
+# --- РЕГІСТР 208: ПЕРЕХІД В БАЙПАС ПРИ ПЕРЕВАНТАЖЕННІ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Enable Overload to Bypass"
+    address: 208
+    register_type: holding
+    entity_category: config
+    lambda: "return x > 0;"
+    write_lambda: "return x ? 1.0f : 0.0f;"
+
+
+
+
+
+number:
+# 1. Максимальний загальний струм заряджання батареї (Регістр 129)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Max Charge Current"
+    address: 129
+    register_type: holding 
+    value_type: U_WORD 
+    unit_of_measurement: "A"
+    device_class: current
+    entity_category: config
+    icon: "mdi:battery-charging-high"
+    # Чіткі межі для повзунка (від 10А до 120А, підлаштуйте під свій акумулятор)
+    min_value: 10
+    max_value: 120
+    step: 1
+    # Явне ділення та множення для Modbus (замість багнутого multiply):
+    lambda: "return (float)x * 0.01;"
+    write_lambda: "return (uint16_t)(x / 0.01);"
+    mode: 'box'
+
+# 2. Максимальний струм заряджання від мережі (Регістр 189)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "AC Grid Charge Current"
+    address: 189
+    register_type: holding 
+    value_type: U_WORD 
+    unit_of_measurement: "A"
+    device_class: current
+    entity_category: config
+    icon: "mdi:power-plug"
+    # Чіткі межі (від 0А до 100А)
+    min_value: 0
+    max_value: 100
+    step: 1
+    # Явне ділення та множення (крок за таблицею 0.1):
+    lambda: "return (float)x * 0.1;"
+    write_lambda: "return (uint16_t)(x / 0.1);"
+    mode: 'box'
+
+  # Максимальна потужність генератора в кВт (Регістр 220)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Gen Input Rated Power"
+    address: 220
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "kW"       # Змінюємо одиниці виміру на кВт
+    entity_category: config
+    icon: "mdi:generator-portable"
+    min_value: 0
+    max_value: 15.0                # Максимум 15 кВт
+    step: 0.1                      # Крок 0.1 кВт (тобто 100 Вт)
+    mode: BOX
+
+    # --- МАТЕМАТИКА ДЛЯ КВТ ---
+    # При читанні: якщо інвертор для 5000Вт присилає сире 500:
+    # 500 * 10 = 5000 Вт. Ділимо на 1000, щоб отримати 5.0 кВт.
+    # Разом це спрощується до: х * 0.01
+    lambda: "return (float)x * 0.01;"
+
+    # При записі: якщо ви вводите 5.0 кВт:
+    # 5.0 * 1000 = 5000 Вт. Ділимо на 10 (бо інвертор чекає 500).
+    # Разом це спрощується до: х * 100.0
+    write_lambda: "return (uint16_t)(x * 100.0);"
+
+# Відсоток акумулятора (SOC) для ВИМКНЕННЯ Smart Load / Second EPS (Регістр 226)
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Smart Load Off SOC"
+    address: 226
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    device_class: battery
+    entity_category: config
+    icon: "mdi:battery-arrow-down"
+    min_value: 10
+    max_value: 95
+    step: 1
+    mode: BOX
+    # Передаємо значення як є (якщо на екрані 50%, інвертор чекає число 50)
+    lambda: "return (float)x;"
+    write_lambda: "return (uint16_t)x;"
+
+# --- РЕГІСТР 215: КОМПЕНСАЦІЯ ПОТУЖНОСТІ МЕРЕЖІ (ZERO EXPORT BUFFER) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Grid Power Compensation"
+    address: 215
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "W"
+    entity_category: config
+    icon: "mdi:hand-coin"
+    min_value: 0
+    max_value: 200
+    step: 1
+    mode: BOX
+    # Значення передаються як є (наприклад, число 40 = 40 Вт)
+    lambda: "return (float)x;"
+    write_lambda: "return (uint16_t)x;"
+
+
+    # --- РЕГІСТР 183: МАКСИМАЛЬНИЙ СТРУМ РОЗРЯДУ ---
+  #- platform: modbus_controller
+  #  modbus_controller_id: inverter
+  #  name: "Inverter Max Discharge Current"
+  #  address: 183
+  #  register_type: holding
+  #  value_type: U_WORD
+  #  unit_of_measurement: "A"
+  #  device_class: current
+  #  entity_category: config
+  #  icon: "mdi:battery-arrow-down-current"
+  #  min_value: 1.0
+  #  max_value: 137.0
+  #  step: 1.0
+  #  mode: BOX
+  #  lambda: "return (float)x / 100.0;"
+  #  write_lambda: "return (uint16_t)(x * 100.0);"
+
+# --- РЕГІСТР 185: SOC ВІДНОВЛЕННЯ РОЗРЯДУ (ON-GRID) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "On-Grid End-of-Discharge Recovery SOC"
+    address: 185
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    device_class: battery
+    entity_category: config
+    icon: "mdi:battery-refresh"
+    min_value: 20
+    max_value: 100
+    step: 1
+    mode: BOX
+    lambda: "return (float)x;"
+    write_lambda: "return (uint16_t)x;"
+
+# --- РЕГІСТР 187: SOC ВІДНОВЛЕННЯ РОЗРЯДУ (OFF-GRID) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Off-Grid end-of-Discharge Recovery"
+    address: 187
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    device_class: battery
+    entity_category: config
+    icon: "mdi:battery-refresh-outline"
+    min_value: 10
+    max_value: 100
+    step: 1
+    mode: BOX
+    lambda: "return (float)x;"
+    write_lambda: "return (uint16_t)x;"
+
+# --- РЕГІСТР 188: НАПРУГА ЗАХИСНОГО ВИМКНЕННЯ (UNDER VOLTAGE) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Under Voltage Cut-off"
+    address: 188
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    entity_category: config
+    icon: "mdi:battery-alert"
+    min_value: 40.0
+    max_value: 48.0
+    step: 0.1
+    mode: BOX
+    lambda: "return (float)x / 10 ;" # x / 10.0
+    write_lambda: "return (uint16_t)(x * 10.0);"
+
+# --- РЕГІСТР 190: НАПРУГА ПЛАВАЮЧОГО ЗАРЯДУ (FLOAT) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Float Voltage"
+    address: 190
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    entity_category: config
+    icon: "mdi:battery-charging-wireless-60"
+    min_value: 48.0
+    max_value: 58.4
+    step: 0.1
+    mode: BOX
+    lambda: "return (float)x / 100.0;"
+    write_lambda: "return (uint16_t)(x * 100.0);"
+
+# --- РЕГІСТР 191: НАПРУГА ПЕРЕХОДУ БАТАРЕЯ -> МЕРЕЖА ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery to AC Voltage (Discharge limit)"
+    address: 191
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    entity_category: config
+    icon: "mdi:battery-arrow-down"
+    min_value: 44.0
+    max_value: 52.0
+    step: 0.1
+    mode: BOX
+    lambda: "return (float)x / 10.0;"
+    write_lambda: "return (uint16_t)(x * 10.0);"
+
+# --- РЕГІСТР 192: НАПРУГА ПЕРЕХОДУ МЕРЕЖА -> БАТАРЕЯ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter AC to Battery Voltage (Charge target)"
+    address: 192
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    entity_category: config
+    icon: "mdi:battery-arrow-up"
+    min_value: 48.0
+    max_value: 58.0
+    step: 0.1
+    mode: BOX
+    lambda: "return (float)x / 10.0;"
+    write_lambda: "return (uint16_t)(x * 10.0);"
+
+# --- РЕГІСТР 194: МАКСИМАЛЬНИЙ ЧАС ПІДВИЩЕНОГО ЗАРЯДУ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Boost Charge Max Time"
+    address: 194
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "min"
+    entity_category: config
+    icon: "mdi:timer-cog"
+    min_value: 5
+    max_value: 900
+    step: 1
+    mode: BOX
+    lambda: "return (float)x;"
+    write_lambda: "return (uint16_t)x;"
+
+# --- РЕГІСТР 195: ТОЧКА ПОПЕРЕДЖЕННЯ ПРО НИЗЬКУ НАПРУГУ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Under Voltage Alarm"
+    address: 195
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    entity_category: config
+    icon: "mdi:battery-alert-variant-outline"
+    min_value: 40.0
+    max_value: 50.0
+    step: 0.1
+    mode: BOX
+    lambda: "return (float)x / 10.0;"
+    write_lambda: "return (uint16_t)(x * 10.0);"
+
+# --- РЕГІСТР 130: НАПРУГА ПРИПИНЕННЯ РОЗРЯДУ (STOP DISCHARGE) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Stop Discharge Voltage"
+    address: 130
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    entity_category: config
+    icon: "mdi:battery-remove"
+    min_value: 40.0
+    max_value: 52.0
+    step: 0.01
+    mode: BOX
+    lambda: "return (float)x / 100.0;"
+    write_lambda: "return (uint16_t)(x * 100.0);"
+
+# --- РЕГІСТР 131: НАПРУГА ВІДСІКАННЯ ЗАРЯДУ (CONSTANT CHARGE) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Constant Charge Voltage"
+    address: 131
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    entity_category: config
+    icon: "mdi:battery-charging-high"
+    min_value: 48.0
+    max_value: 59.2
+    step: 0.01
+    mode: BOX
+    lambda: "return (float)x / 100.0;"
+    write_lambda: "return (uint16_t)(x * 100.0);"
+
+# --- РЕГІСТР 139: SOC ПРИПИНЕННЯ ЗАРЯДУ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Battery Charge Stop SOC"
+    address: 139
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    device_class: battery
+    entity_category: config
+    icon: "mdi:battery-charging-100"
+    min_value: 10
+    max_value: 100
+    step: 1
+    mode: BOX
+    lambda: "return (float)x;"
+    write_lambda: "return (uint16_t)x;"
+
+# --- РЕГІСТР 140: SOC ПРИПИНЕННЯ РОЗРЯДУ ПРИ НАЯВНОСТІ МЕРЕЖІ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "On-Grid Discharge Stop SOC"
+    address: 140
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    device_class: battery
+    entity_category: config
+    icon: "mdi:battery-arrow-down"
+    min_value: 10
+    max_value: 100
+    step: 1
+    mode: BOX
+    lambda: "return (float)x;"
+    write_lambda: "return (uint16_t)x;"
+
+# --- РЕГІСТР 141: SOC ПОВНОГО ВИМКНЕННЯ ПРИ АВТОНОМІЇ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Off-Grid Discharge Stop SOC"
+    address: 141
+    register_type: holding
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    device_class: battery
+    entity_category: config
+    icon: "mdi:battery-alert"
+    min_value: 10
+    max_value: 100
+    step: 1
+    mode: BOX
+    lambda: "return (float)x;"
+    write_lambda: "return (uint16_t)x;"
+
+
+
+
+select:
+# --- РЕГІСТР 209: РЕЖИМ ВХІДНОЇ МЕРЕЖІ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter AC Input Type"
+    address: 209
+    value_type: U_WORD
+    entity_category: config
+    icon: "mdi:power-settings"
+    optionsmap:
+      "APL": 0
+      "UPS": 1
+
+# --- РЕГІСТР 211: РЕЖИМ ПАРАЛЕЛЬНОЇ РОБОТИ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Parallel Mode"
+    address: 211
+    value_type: U_WORD
+    entity_category: config
+    icon: "mdi:dots-hexagon"
+    optionsmap:
+      "Single (SIG)": 0
+      "Parallel (PAL)": 1
+      "3-Phase 1 (3P1)": 2
+      "3-Phase 2 (3P2)": 3
+      "3-Phase 3 (3P3)": 4
+
+# --- РЕГІСТР 213: РОЛЬ У ПАРАЛЕЛЬНІЙ СИСТЕМІ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Parallel Device Type"
+    address: 213
+    value_type: U_WORD
+    entity_category: config
+    icon: "mdi:account-network"
+    optionsmap:
+      "Master": 0
+      "Slave": 1
+
+# --- РЕГІСТР 214: РЕЖИМ РОБОТИ BMS (КОМУНІКАЦІЯ) ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter BMS Work Mode"
+    address: 214
+    value_type: U_WORD
+    entity_category: config
+    icon: "mdi:battery-bluetooth"
+    optionsmap:
+      "Disabled (Voltage Mode)": 0
+      "CAN Bus": 1
+      "RS485": 2
+
+# --- РЕГІСТР 181: ПРІОРИТЕТ ЗАРЯДЖАННЯ АКУМУЛЯТОРА ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Charge Source Priority"
+    address: 181
+    value_type: U_WORD
+    entity_category: config
+    icon: "mdi:battery-charging-setting"
+    optionsmap:
+      "Solar First (CSO)": 0
+      "Solar & Utility (SNU)": 1
+      "Only Solar (OSO)": 2
+
+# --- РЕГІСТР 182: ПРІОРИТЕТ ЖИВЛЕННЯ НАВАНТАЖЕННЯ ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Output Source Priority"
+    address: 182
+    value_type: U_WORD
+    entity_category: config
+    icon: "mdi:home-lightning-bolt"
+    optionsmap:
+      "Solar-Battery-Utility (SOL)": 0
+      "Utility-Solar-Battery (UTI)": 1
+      "Solar-Utility-Battery (SBU)": 2
+      "Grid-Tied Mode": 10
+
+# --- РЕГІСТР 125:  ТИП АКУМУЛЯТОРА  ---
+  - platform: modbus_controller
+    modbus_controller_id: inverter
+    name: "Inverter Battery SubType"
+    address: 125
+    value_type: U_WORD
+    entity_category: config
+    icon: "mdi:battery-casing"
+    optionsmap:
+      "Lead-Acid": 0
+      "Lithium": 1
+      "Lithium No Comm": 2
+
+
+#  - platform: modbus_controller
+#    modbus_controller_id: inverter
+#    name: "EPS N-PE Grounding Relay"
+#    address: 112
+    # Зв'язуємо текст із числовими значеннями регістра:
+#    optionsmap:
+#      "Disable (Floating Neutral)": 0
+#      "Enable (Bridge N-PE in EPS)": 1
+#    icon: "mdi:relay"
+
+
+
+binary_sensor:
+  # БІТ 0: ЕКО РЕЖИМ
+  - platform: template
+    id: bin_eco_mode
+    name: "Inverter ECO Mode Status"
+    icon: "mdi:leaf"
+
+  # БІТ 1: АВТОПЕРЕЗАПУСК ПРИ ПЕРЕВАНТАЖЕННІ
+  - platform: template
+    id: bin_overload_restart
+    name: "Inverter Overload Auto Restart Status"
+    icon: "mdi:refresh-circle"
+
+  # БІТ 2: АВТОПЕРЕЗАПУСК ПРИ ПЕРЕГРІВІ
+  - platform: template
+    id: bin_temp_restart
+    name: "Inverter Over-Temperature Auto Restart Status"
+    icon: "mdi:thermometer-refresh"
+
+  # БІТ 3: ЗВУК ПРИ ЗМІНІ РЕЖИМУ ЖИВЛЕННЯ
+  - platform: template
+    id: bin_mode_alert
+    name: "Inverter Mode Change Alert Status"
+    icon: "mdi:bell-ring-outline"
+
+  # БІТ 5: ДОЗВІЛ РОБОТИ ВІД ГЕНЕРАТОРА
+  - platform: template
+    id: bin_gen_enable
+    name: "Inverter Generator Input Status"
+    icon: "mdi:engine-start"
+
+  # БІТ 6: ДВОКАНАЛЬНЕ НАВАНТАЖЕННЯ (SMART LOAD)
+  - platform: template
+    id: bin_smart_load
+    name: "Inverter Smart Load Status"
+    icon: "mdi:power-plug"
+
+  # БІТ 7: ДОЗВІЛ ГЕНЕРАЦІЇ В МЕРЕЖУ (GRID FEED)
+  - platform: template
+    id: bin_grid_feed
+    name: "Inverter Grid Feed-In Status"
+    icon: "mdi:transmission-tower-export"
