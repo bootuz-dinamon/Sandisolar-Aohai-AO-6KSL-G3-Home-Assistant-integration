@@ -1,4 +1,4 @@
-# Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration
+# Sandisolar Aohai AO-6KSL-G3 Home Assistant integration
 Sandisolar Aohai AO-6KSL-G3 Home Assistant integration via RS-485 using esphome.
 
 ![Sandisolar Aohai AO-6KSL-G3](https://github.com/bootuz-dinamon/Sandisolar-Aohai-AO-6KSL-G3-Home-Assistant-integration/blob/main/SD-PRO-EU-6_8.webp)
