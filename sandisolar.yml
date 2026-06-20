@@ -648,28 +648,15 @@ sensor:
     icon: "mdi:heart-battery"
 
 
-# 201й регістр
+    # Сирий регістр 201 — потрібен як джерело "поточного" значення
+  # для read-modify-write у switch нижче.
   - platform: modbus_controller
     modbus_controller_id: inverter
     id: inverter_reg_201_raw
     address: 201
     register_type: holding
     value_type: U_WORD
-    internal: true # Цей сенсор прихований, він потрібен лише для розбору на біти
-    # Оновлюємо статус наших бінарних сенсорів щоразу, як зчитується регістр
-    on_value:
-      then:
-        - lambda: |-
-            if (!std::isnan(x)) {
-              uint16_t val = (uint16_t)x;
-              id(bin_eco_mode).publish_state((val & 0x0001) > 0);
-              id(bin_overload_restart).publish_state((val & 0x0002) > 0);
-              id(bin_temp_restart).publish_state((val & 0x0004) > 0);
-              id(bin_mode_alert).publish_state((val & 0x0008) > 0);
-              id(bin_gen_enable).publish_state((val & 0x0020) > 0);
-              id(bin_smart_load).publish_state((val & 0x0040) > 0);
-              id(bin_grid_feed).publish_state((val & 0x0080) > 0);
-            }
+    internal: true
 
 
 text_sensor:
@@ -772,17 +759,175 @@ switch:
     lambda: "return x > 0;"
     write_lambda: "return x ? 1.0f : 0.0f;"
 
-# --- РЕГІСТР 208: ПЕРЕХІД В БАЙПАС ПРИ ПЕРЕВАНТАЖЕННІ ---
-  - platform: modbus_controller
-    modbus_controller_id: inverter
-    name: "Enable Overload to Bypass"
-    address: 208
-    register_type: holding
+
+# register 201
+  - platform: template
+    name: "ECO Mode Enable"
+    icon: "mdi:leaf"
     entity_category: config
-    lambda: "return x > 0;"
-    write_lambda: "return x ? 1.0f : 0.0f;"
-
-
+    optimistic: false
+    lambda: |-
+      if (std::isnan(id(inverter_reg_201_raw).state)) return {};
+      uint16_t val = (uint16_t)id(inverter_reg_201_raw).state;
+      return (val & 0x0001) > 0;
+    turn_on_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base | 0x0001;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+    turn_off_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base & (uint16_t)~0x0001;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+ 
+  - platform: template
+    name: "Overload Auto-Restart Enable"
+    icon: "mdi:restart-alert"
+    entity_category: config
+    optimistic: false
+    lambda: |-
+      if (std::isnan(id(inverter_reg_201_raw).state)) return {};
+      uint16_t val = (uint16_t)id(inverter_reg_201_raw).state;
+      return (val & 0x0002) > 0;
+    turn_on_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base | 0x0002;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+    turn_off_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base & (uint16_t)~0x0002;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+ 
+  - platform: template
+    name: "Overtemp Auto-Restart Enable"
+    icon: "mdi:thermometer-alert"
+    entity_category: config
+    optimistic: false
+    lambda: |-
+      if (std::isnan(id(inverter_reg_201_raw).state)) return {};
+      uint16_t val = (uint16_t)id(inverter_reg_201_raw).state;
+      return (val & 0x0004) > 0;
+    turn_on_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base | 0x0004;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+    turn_off_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base & (uint16_t)~0x0004;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+ 
+  - platform: template
+    name: "Input Mode Change Reminder Enable"
+    icon: "mdi:bell-alert-outline"
+    entity_category: config
+    optimistic: false
+    lambda: |-
+      if (std::isnan(id(inverter_reg_201_raw).state)) return {};
+      uint16_t val = (uint16_t)id(inverter_reg_201_raw).state;
+      return (val & 0x0008) > 0;
+    turn_on_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base | 0x0008;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+    turn_off_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base & (uint16_t)~0x0008;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+ 
+#  - platform: template
+#    name: "Output Phase Separation Enable"
+#    icon: "mdi:call-split"
+#    entity_category: config
+#    optimistic: false
+#    lambda: |-
+#      if (std::isnan(id(inverter_reg_201_raw).state)) return {};
+#      uint16_t val = (uint16_t)id(inverter_reg_201_raw).state;
+#      return (val & 0x0010) > 0;
+#    turn_on_action:
+#      - lambda: |-
+#          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+#          uint16_t val = base | 0x0010;
+#          id(inverter).queue_command(
+#            modbus_controller::ModbusCommandItem::create_write_single_command(
+#              id(inverter), 201, val));
+#    turn_off_action:
+#      - lambda: |-
+#          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+#          uint16_t val = base & (uint16_t)~0x0010;
+#          id(inverter).queue_command(
+#            modbus_controller::ModbusCommandItem::create_write_single_command(
+#              id(inverter), 201, val));
+ 
+  - platform: template
+    name: "Generator Auto Input Enable"
+    icon: "mdi:engine-outline"
+    entity_category: config
+    optimistic: false
+    lambda: |-
+      if (std::isnan(id(inverter_reg_201_raw).state)) return {};
+      uint16_t val = (uint16_t)id(inverter_reg_201_raw).state;
+      return (val & 0x0020) > 0;
+    turn_on_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base | 0x0020;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+    turn_off_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base & (uint16_t)~0x0020;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+ 
+  - platform: template
+    name: "Dual Channel Load Enable"
+    icon: "mdi:call-split"
+    entity_category: config
+    optimistic: false
+    lambda: |-
+      if (std::isnan(id(inverter_reg_201_raw).state)) return {};
+      uint16_t val = (uint16_t)id(inverter_reg_201_raw).state;
+      return (val & 0x0040) > 0;
+    turn_on_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base | 0x0040;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
+    turn_off_action:
+      - lambda: |-
+          uint16_t base = (uint16_t)id(inverter_reg_201_raw).state;
+          uint16_t val = base & (uint16_t)~0x0040;
+          id(inverter).queue_command(
+            modbus_controller::ModbusCommandItem::create_write_single_command(
+              id(inverter), 201, val));
 
 
 
@@ -1251,45 +1396,3 @@ select:
 
 
 
-binary_sensor:
-  # БІТ 0: ЕКО РЕЖИМ
-  - platform: template
-    id: bin_eco_mode
-    name: "Inverter ECO Mode Status"
-    icon: "mdi:leaf"
-
-  # БІТ 1: АВТОПЕРЕЗАПУСК ПРИ ПЕРЕВАНТАЖЕННІ
-  - platform: template
-    id: bin_overload_restart
-    name: "Inverter Overload Auto Restart Status"
-    icon: "mdi:refresh-circle"
-
-  # БІТ 2: АВТОПЕРЕЗАПУСК ПРИ ПЕРЕГРІВІ
-  - platform: template
-    id: bin_temp_restart
-    name: "Inverter Over-Temperature Auto Restart Status"
-    icon: "mdi:thermometer-refresh"
-
-  # БІТ 3: ЗВУК ПРИ ЗМІНІ РЕЖИМУ ЖИВЛЕННЯ
-  - platform: template
-    id: bin_mode_alert
-    name: "Inverter Mode Change Alert Status"
-    icon: "mdi:bell-ring-outline"
-
-  # БІТ 5: ДОЗВІЛ РОБОТИ ВІД ГЕНЕРАТОРА
-  - platform: template
-    id: bin_gen_enable
-    name: "Inverter Generator Input Status"
-    icon: "mdi:engine-start"
-
-  # БІТ 6: ДВОКАНАЛЬНЕ НАВАНТАЖЕННЯ (SMART LOAD)
-  - platform: template
-    id: bin_smart_load
-    name: "Inverter Smart Load Status"
-    icon: "mdi:power-plug"
-
-  # БІТ 7: ДОЗВІЛ ГЕНЕРАЦІЇ В МЕРЕЖУ (GRID FEED)
-  - platform: template
-    id: bin_grid_feed
-    name: "Inverter Grid Feed-In Status"
-    icon: "mdi:transmission-tower-export"
