@@ -10,7 +10,6 @@ If you have established communication with the battery via CAN, then you still h
 Off-grid solar inverter Sandisolar 6.5kW - https://s.click.aliexpress.com/e/_c3pTJSjF
 
 The inverter's rated output power is 6000W.
-The inverter does not have the Neutral formation function in off-grid mode if Grounding is present.
 
 
 You will need an RS485-TTL adapter and an esp32 (I use an esp32c6 but the correct one).
