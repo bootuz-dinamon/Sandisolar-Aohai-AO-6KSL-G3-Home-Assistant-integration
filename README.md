@@ -37,4 +37,8 @@ Settings:
 
 
 
-https://youtu.be/8k_yp0sCceI
+
+[![ SANDISOLAR Pro 6.5kW AO-6KSL-G3](https://i.ytimg.com/vi/8k_yp0sCceI/sddefault.jpg)](https://youtu.be/8k_yp0sCceI)
+
+
+
